@@ -1,10 +1,12 @@
 from flask import Flask,jsonify
-import numpy as np
+
 import threading
+from flask_cors import CORS
 from body_keypoint_track import MEDIAPIPE_POSE_KEYPOINTS
 from plot3d import shared_data, printvals
 
 app=Flask(__name__)
+CORS(app)
 
 @app.route('/')
 def home():
@@ -33,6 +35,9 @@ if __name__=="__main__":
     background_thread.start()
     app.run(debug=True)
 
+# from plot3d import test2
 
+
+# test2()
 
 

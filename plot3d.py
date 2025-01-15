@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+
 # test()
 
 
@@ -49,7 +50,7 @@ def printvals():
             shared_data.kpts3d=kpts3d
             shared_data.visib=visib
         shared_data.data_ready.set()
-        break
+       
         # kpts3ds.append((kpts3d, visib))
 
         frame_t +=1.0 / frame_rate
