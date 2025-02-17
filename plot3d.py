@@ -21,10 +21,10 @@ class SharedData:
 shared_data=SharedData()
 def printvals():
     
-    INPUT_FILE = 'C:\\Users\\ANCEL PUTHOOR\\Downloads\\dance.mp4'
-    INPUT_IMAGE_SIZE = (640, 360)
+    INPUT_FILE = 'C:\\Users\\ANCEL PUTHOOR\\Downloads\\leftarmmove.mp4'
+    INPUT_IMAGE_SIZE = (360, 640)
     cap = cv2.VideoCapture(INPUT_FILE)
-    frame_rate = cap.get(cv2.CAP_PROP_FPS)
+    frame_rate = 30
     frame_width, frame_height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     kpts3ds = []
     
@@ -47,13 +47,13 @@ def printvals():
         body_keypoint_track.track(frame, frame_t)
         
         kpts3d, visib = body_keypoint_track.get_smoothed_3d_keypoints(frame_t)
-        kpts3d[:, 1] =-( kpts3d[:, 1])+1
-        kpts3d[:, 2] -=1
+        kpts3d[:, 1] =-( kpts3d[:, 1])
+        kpts3d[:, 2] =-( kpts3d[:, 2])
         with shared_data.lock:
             shared_data.kpts3d=kpts3d
             shared_data.visib=visib
         shared_data.data_ready.set()
-       
+        # print(kpts3d)
         # kpts3ds.append((kpts3d, visib))
 
         frame_t +=1.0 / frame_rate
@@ -69,8 +69,8 @@ def test2():
     ax = fig.add_subplot(111, projection='3d')
 
 
-    INPUT_FILE = 'C:\\Users\\ANCEL PUTHOOR\\Downloads\\dance.mp4'
-    INPUT_IMAGE_SIZE = (640, 360)
+    INPUT_FILE = 'C:\\Users\\ANCEL PUTHOOR\\Downloads\\leftarmfrontmove.mp4'
+    INPUT_IMAGE_SIZE = (360, 640)
     cap = cv2.VideoCapture(INPUT_FILE)
     frame_rate = cap.get(cv2.CAP_PROP_FPS)
     frame_width, frame_height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -102,6 +102,8 @@ def test2():
         visible_points = kpts3d[visib == 1]
         ax.scatter(visible_points[:, 0], visible_points[:, 1], visible_points[:, 2], 
                   c='red', marker='o', s=50)
+        for i in range(len(visible_points)):
+            ax.text(visible_points[i, 0], visible_points[i, 1], visible_points[i, 2],str(i), fontsize=12, ha='center')
         
       
         for a, b in MEDIAPIPE_POSE_CONNECTIONS:
@@ -140,7 +142,7 @@ def init():
     # plt.ion()
 
 
-    INPUT_FILE = 'C:\\Users\\ANCEL PUTHOOR\\Downloads\\dance.mp4'
+    INPUT_FILE = 'assets\\leftarmmove.mp4'
     INPUT_IMAGE_SIZE = (640, 360)
     cap = cv2.VideoCapture(INPUT_FILE)
     frame_rate = cap.get(cv2.CAP_PROP_FPS)
@@ -187,8 +189,8 @@ def Animate(frame_i,body_keypoint_track,cap,frame_rate,ax, INPUT_IMAGE_SIZE):
         frame = cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), INPUT_IMAGE_SIZE)
         body_keypoint_track.track(frame, frame_t)
         kpts3d, visib = body_keypoint_track.get_smoothed_3d_keypoints(frame_t)
-        kpts3d[:, 1] =-( kpts3d[:, 1])+1
-        kpts3d[:, 2] -=1
+        # kpts3d[:, 1] =-( kpts3d[:, 1])+1
+        # kpts3d[:, 2] -=1
         # kpts3ds.append((kpts3d, visib))
         ax.cla()
         
@@ -219,5 +221,6 @@ def Animate(frame_i,body_keypoint_track,cap,frame_rate,ax, INPUT_IMAGE_SIZE):
 
 # test2()
 # init()
+# printvals()
 
 

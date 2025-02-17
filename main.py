@@ -11,14 +11,14 @@ CORS(app)
 
 @app.route('/')
 def home():
-   kpts3d=shared_data.kpts3d
-   dict={}
+#    kpts3d=shared_data.kpts3d
+   dict1={}
    i=0
    shared_data.data_ready.wait()
    with shared_data.lock:
        kpts3d=shared_data.kpts3d
-   dict=bone(kpts3d)
-   print(dict)
+   dict1=bone(kpts3d)
+#    print(dict1)
 #    for s in MEDIAPIPE_POSE_KEYPOINTS:
        
 #         if(kpts3d is None):
@@ -28,7 +28,7 @@ def home():
 #             dict[s]=kpts3d[i].tolist()
 #             i+=1
    
-   return jsonify(dict)
+   return jsonify(dict1)
 
 
 if __name__=="__main__":
