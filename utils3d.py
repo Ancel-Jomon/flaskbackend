@@ -76,6 +76,7 @@ def euler_angle_to_matrix(euler_angles: torch.Tensor, convention: str) -> torch.
     return matrices[2] @ matrices[1] @ matrices[0]
 
 def intrinsic_from_fov(fov: float, width: int, height: int) -> np.ndarray:
+    
     normed_int =  np.array([
         [0.5 / (np.tan(fov / 2) * (width / max(width, height))), 0., 0.5],
         [0., 0.5 / (np.tan(fov / 2) * (height / max(width, height))), 0.5],

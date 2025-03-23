@@ -1,46 +1,128 @@
-from flask import Flask,jsonify
+import base64
+import re
+from flask_socketio import SocketIO
+import cv2
+from flask import Flask
 
-import threading
-from flask_cors import CORS
-from body_keypoint_track import MEDIAPIPE_POSE_KEYPOINTS
+import numpy as np
+
+from body_keypoint_track import BodyKeypointTrack
 from bone import bone
-from plot3d import shared_data, printvals
+
+
 
 app=Flask(__name__)
-CORS(app)
+# CORS(app)
+socketio = SocketIO(app,cors_allowed_origins="*")
+stop_stream=False
 
-@app.route('/')
-def home():
-#    kpts3d=shared_data.kpts3d
-   dict1={}
-   i=0
-   shared_data.data_ready.wait()
-   with shared_data.lock:
-       kpts3d=shared_data.kpts3d
-   dict1=bone(kpts3d)
-#    print(dict1)
-#    for s in MEDIAPIPE_POSE_KEYPOINTS:
-       
-#         if(kpts3d is None):
-#            print("no")
-#         else:
-            
-#             dict[s]=kpts3d[i].tolist()
-#             i+=1
+
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    global stop_stream
+    stop_stream=True
+    print('Client disconnected')
+
+
+
+@socketio.on('video_frame')
+def handle_video_frame(data):
+    # Decode base64 image from frontend
+
+    # base64_data = data.split(',')[1]
+    
+    # # Decode base64 string to image
+    img_bytes = base64.b64decode(data)
+    img_array = np.frombuffer(img_bytes, dtype=np.uint8)
+    frame = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+    # width = data['width']
+    # height = data['height']
+    # pixels = np.array(data['data'], dtype=np.uint8).reshape(height, width, 4)
+    # frame = cv2.cvtColor(pixels, cv2.COLOR_RGBA2BGR)  
+    print("received")
+    # Process frame
+    process_frame(frame,socketio)
+
+@socketio.on('video_source')
+def handle_video_frame(data):
+    global stop_stream
    
-   return jsonify(dict1)
+    if data=="stop":
+        stop_stream=True
+    else:
+        if  stop_stream:
+            stop_stream=False
+        get_frames(data)
+
+
+def get_frames(data):
+      INPUT_FILE = "C:\\Users\\alanj\\Downloads\\absolutecinema.mp4"
+      global stop_stream,socketio
+      if data=="camera":
+        cap = cv2.VideoCapture(0)
+      elif data=="file":
+          cap = cv2.VideoCapture(INPUT_FILE)
+      fps = cap.get(cv2.CAP_PROP_FPS)
+      cap.set(cv2.CAP_PROP_FPS,60)
+      while cap.isOpened() and not stop_stream :
+       
+        ret, frame = cap.read()
+        if not ret:
+            break
+        
+        process_frame(frame,socketio)
+        _, buffer = cv2.imencode('.jpg', frame)
+        processed_data = base64.b64encode(buffer).decode('utf-8')
+        socketio.emit('frame_processed', f'data:image/jpeg;base64,{processed_data}')
+        
+
+      cap.release()
+      cv2.destroyAllWindows()
+
+frame_t= 1.0
+frame_rate = 60
+objectpresent=False
+body_keypoint_track=None
+
+def process_frame(frame,socketio):
+       
+        global frame_rate,frame_t,objectpresent,body_keypoint_track
+        INPUT_IMAGE_SIZE = (360, 640)
+        frame = cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), INPUT_IMAGE_SIZE)
+
+        
+        if not objectpresent:
+            frame_height, frame_width = frame.shape[:2]
+            body_keypoint_track = BodyKeypointTrack(
+            im_width=frame_width,
+            im_height=frame_height,
+            fov=np.pi / 3,
+            track_hands=False,
+            smooth_range=10 * (1 / frame_rate),
+            smooth_range_barycenter=30 * (1 / frame_rate),
+            frame_rate=frame_rate)
+            objectpresent=True
+        seconds=frame_t/frame_rate
+        body_keypoint_track.track(frame,seconds)
+        
+        kpts3d, visib = body_keypoint_track.get_smoothed_3d_keypoints(seconds)
+        kpts3d[:, 1] =-( kpts3d[:, 1])
+        kpts3d[:, 2] =-( kpts3d[:, 2])
+        frame_t +=1.0 
+
+        socketio.emit('keypoints_vector',bone(kpts3d))
+
 
 
 if __name__=="__main__":
+   
+    socketio.run(app, debug=True)
+    
+    
 
-    background_thread=threading.Thread(target=printvals)
-    background_thread.daemon=True
-    background_thread.start()
-    app.run(debug=True)
-
-# from plot3d import test2
-
-
-# test2()
 
 
